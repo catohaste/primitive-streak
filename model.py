@@ -38,28 +38,29 @@ delay_steps = int(transcription_delay_time / step_length)
 number_of_steps = int(model_runtime / step_length)
 
 # model parameters
-saturation_inducer = 1
-saturation_inhibitor = 1
-saturation_propagator = 1
+saturation_inducer = 5
+saturation_inhibitor = 5
+saturation_propagator = 10
 
 a_vv = 1
 a_iv = 1
+a_vi = 1
 a_pi = 1
 a_ii = 1
 a_vp = 1
 a_pp = 1
 
-alpha_inducer = 1
-alpha_inhibitor = 1
-alpha_propagator = 1
+alpha_inducer = np.power(30,4)
+alpha_inhibitor = np.power(30,4)
+alpha_propagator = np.power(30,4)
 
-decay_inducer = 1
-decay_inhibitor = 1
-decay_propagator = 1
+decay_inducer = 0.4
+decay_inhibitor = 0.4
+decay_propagator = 0.8
 
-diffusion_inducer = 0.5
-diffusion_inhibitor = 0.5
-diffusion_propagator = 0.5
+diffusion_inducer = 0.2
+diffusion_inhibitor = 0.2
+diffusion_propagator = 0.8
 
 inducer_source = (list(range(number_of_cells)) - ((np.ones(number_of_cells)-1)*0.5))*0.001
 
@@ -104,11 +105,11 @@ for step in range(delay_steps,number_of_steps):
             cell_minus_one = cell-1
             cell_plus_one = cell+1
 
-        inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * inducer[step-delay_steps,cell]) / ( alpha_inducer + (a_vv * inducer[step-delay_steps,cell]) + (a_iv * inhibitor[step-delay_steps,cell]) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
+        inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * np.power(inducer[step-delay_steps,cell],4)) / ( alpha_inducer + (a_vv * np.power(inducer[step-delay_steps,cell],4)) + (a_iv * np.power(inhibitor[step-delay_steps,cell],4)) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
         
-        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_inhibitor*(inhibitor[step-delay_steps,cell] + propagator[step-delay_steps,cell]) ) / ( alpha_inhibitor + (a_pi*propagator[step-delay_steps,cell]) + (a_ii*inhibitor[step-delay_steps,cell]) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
+        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_inhibitor*(np.power(inhibitor[step-delay_steps,cell],4) + np.power(propagator[step-delay_steps,cell],4)) ) / ( alpha_inhibitor + (a_vi*np.power(inducer[step-delay_steps,cell],4)) + (a_pi*np.power(propagator[step-delay_steps,cell],4)) + (a_ii*np.power(inhibitor[step-delay_steps,cell],4)) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
     
-        propagator[step,cell] = propagator[step-1,cell] + step_length * ( ( (saturation_propagator*(inducer[step-delay_steps,cell] + propagator[step-1,cell]) ) / ( alpha_propagator + (a_vp*inducer[step-delay_steps,cell]) + (a_pp*propagator[step-1,cell]) ) ) - (decay_propagator * propagator[step-1,cell]) + (diffusion_propagator * ( propagator[step-1,cell_minus_one] - 2 * propagator[step-1,cell] + propagator[step-1,cell_plus_one] ) ) )
+        propagator[step,cell] = propagator[step-1,cell] + step_length * ( ( (saturation_propagator*(np.power(inducer[step-delay_steps,cell],4) + np.power(propagator[step-1,cell],4)) ) / ( alpha_propagator + (a_vp*np.power(inducer[step-delay_steps,cell],4)) + (a_pp*np.power(propagator[step-1,cell],4)) ) ) - (decay_propagator * propagator[step-1,cell]) + (diffusion_propagator * ( propagator[step-1,cell_minus_one] - 2 * propagator[step-1,cell] + propagator[step-1,cell_plus_one] ) ) )
         
     
         if inducer[step,cell] < 0:
@@ -139,7 +140,7 @@ for label in legend.get_texts():
 
 anim = animation.FuncAnimation(fig, animate, init_func=init, interval=42, frames=216, blit=True)
 
-anim.save('basic_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
+anim.save('model_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
 
 plt.show()
 
