@@ -61,8 +61,8 @@ propagator = np.zeros( (number_of_steps,number_of_cells), dtype=int)
 
 # inducer initial conditions
 inducer_number_of_starting_cells = 20
-inducer_high_conc = 125
-inducer_low_conc = 35
+inducer_high_conc = 1
+inducer_low_conc = -1
 
 start_steps = int(np.ceil(number_of_steps*0.5))
 
@@ -170,66 +170,69 @@ for step in range(1,number_of_steps):
 print("Inhibitor: ",inhibitor[3000,369])
 print("Propagator: ",propagator[3000,369])
 
-def find_max_y_value(inducer, inhibitor, propagator):
-    max_tmp = max(inducer.max(),inhibitor.max())
-    max_y_value = math.ceil(max(max_tmp,propagator.max()))
-    return max_y_value
-
-max_y_value = 50
 
 style.use('fivethirtyeight')
-
-# set up figure and twin axes
 fig = plt.figure()
-ax1 = plt.axes(xlim=(-1, number_of_cells),ylim=(0.0,max_y_value),xlabel='Cell ID')
-ax1.set_ylabel('propagator conc.', color='purple')
+
+max_yval_ax1 = 50
+
+# set up left axes
+ax1 = plt.axes(xlim=(-1, number_of_cells + 1),ylim=(0.0,max_yval_ax1),xlabel='Cell Location')
+ax1.set_ylabel('Propagator conc.', color='purple')
 ax1.tick_params('y', colors='purple')
+plt.xticks(np.linspace(0,number_of_cells,num=3), ['post.','ant.','post.'])
+
+# set up right axes
 ax2 = ax1.twinx()
-ax2.set_ylabel('inhibitor conc.', color='red')
+ax2.set_ylabel('Inhibitor conc.', color='red')
 ax2.tick_params('y', colors='red')
 ax2.set_ylim(0,150)
 ax2.grid('off')
 
 plt.tight_layout()
 
-threshold = 20 * np.ones((number_of_cells+1,1),dtype=int)
+# draw inhibitor threshold line
+threshold = 20
+threshold_array = threshold * np.ones((number_of_cells+1,1),dtype=int)
+line_threshold, = ax2.plot(range(-1,number_of_cells), threshold_array,'k-',linewidth = 0.75,label='Inhibitor threshold')
+threshold_text = ax2.text(0.8*number_of_cells,threshold,'threshold',fontsize='small')
 
-line_propagator, = ax1.plot([], [],'-',color='purple',markersize = 0.5,label='Propagator')
-#line_inducer, = ax1.plot([], [],'go',markersize = 0.5,label='Inducer')
+# Initiate data to be animated
+line_propagator, = ax1.plot([], [],'-',color='purple',linewidth = 1.0,label='Propagator')
+line_inducer, = ax1.plot([], [],'go',markersize = 0.5,label='Inducer')
 line_inhibitor, = ax2.plot([], [],'ro',markersize = 0.5,label='Inhibitor')
-line_threshold, = ax2.plot(range(-1,number_of_cells), threshold,'-',color='black',markersize = 0.1,label='Threshold')
+time_text = ax1.text(0.8*number_of_cells,max_yval_ax1*0.95,[],fontsize='small')
 
+# Define dummy lines for legend
 legend_inhibitor = ax1.plot([],[],'ro',markersize = 0.5,label='Inhibitor')
-legend_threshold = ax1.plot([],[],'k-',markersize = 0.1,label='Threshold')
 
-time_text = ax1.text(0.8*number_of_cells,max_y_value*0.95,[],fontsize='small')
-
-# Now add the legend with some customizations.
+# Add the legend
 legend = ax1.legend(loc='upper center',shadow=False,markerscale=3,numpoints=5)
 for label in legend.get_texts():
     label.set_fontsize('small')
+
     
 def init():
     line_propagator.set_data([], [])
-    #line_inducer.set_data([], [])
+    line_inducer.set_data([], [])
     line_inhibitor.set_data([], [])
     time_text.set_text('')
-    return time_text, line_propagator,line_inhibitor,#line_inducer,
+    return time_text,line_propagator,line_inhibitor,line_inducer,
     
 sample_rate = 10
 def animate(i):
     sample_rate = 10
     x = list(range(number_of_cells))
     y_propagator = propagator[sample_rate*i,:]
-    #y_inducer = inducer[sample_rate*i,:]
+    y_inducer = inducer[sample_rate*i,:]
     y_inhibitor = inhibitor[sample_rate*i,:]
     line_propagator.set_data(x, y_propagator)
-    #line_inducer.set_data(x, y_inducer)
+    line_inducer.set_data(x, y_inducer)
     line_inhibitor.set_data(x, y_inhibitor)
     current_time = step_length*sample_rate*i
     time_string = 't = ' + str(current_time) + 's'
     time_text.set_text(time_string)
-    return time_text,line_propagator,line_inhibitor,#line_inducer
+    return time_text,line_propagator,line_inhibitor,line_inducer
     
 number_of_frames = int(np.ceil(model_runtime / sample_rate))
 
