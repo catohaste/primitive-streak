@@ -9,44 +9,30 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 
 # Make data
-v = np.arange(0,150,0.5)
-i = np.arange(0,100,0.5)
-p = np.arange(0,10,0.02)
-alpha_v = np.power(30,4)
-alpha_i = np.power(2,4)
-alpha_p = np.power(200,4)
-k_v = 5
-k_i = 0.5
-k_p = 0.7
-a_vv = 1
-a_iv = 1
-a_vi = 1
-a_pi = 1
-a_ii = 1
-a_vp = 1
-a_pp = 1
+i = np.arange(0,10,0.01)
+p = np.arange(0,1000,1)
 
+alpha_ii = 0.1 # micrometers per second 
+k_ii = np.power(2,4) # nano Molar
+a_ii = 1 # no units
 
-# plot v
-# v,i = np.meshgrid(v,i)
-# z= (k_v * np.power(v,4)) / (alpha_v + a_vv * np.power(v,4) + a_iv*np.power(i,4))
-
-# plot p
-# v,p = np.meshgrid(v,p)
-# z = (k_p * np.power(v,4)) / (alpha_p + a_vp * np.power(v,4))
+alpha_pi = 0.3 # micrometers per second 
+k_pi = np.power(500,4) # nano Molar
+a_pi = 1 # no units
 
 # plot i
 p,i = np.meshgrid(p,i)
-z = (k_i * np.power(p,4)) / (alpha_i + a_pi * np.power(p,4))
+z = (alpha_pi * np.power(p,4)) / (k_pi + a_pi * np.power(p,4)) + (alpha_ii * np.power(i,4)) / (k_ii + a_ii * np.power(i,4))
 
 # Plot the surface.
-surf = ax.plot_surface(p, i, z, cmap=cm.coolwarm,
-                       linewidth=0, antialiased=False)
+surf = ax.plot_surface(p, i, z, cmap=cm.coolwarm,linewidth=0, antialiased=False)
                        
 
 
 # Customize the z axis.
-ax.set_zlim(-0.01, 0.5)
+ax.set_zlim(0.0, 0.5)
+ax.set_xlabel('Propagator conc.')
+ax.set_ylabel('Inhibitor conc.')
 ax.zaxis.set_major_locator(LinearLocator(10))
 ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
 
