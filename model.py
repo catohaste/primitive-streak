@@ -37,9 +37,12 @@ a_pi = 1 # no units
 k_ii = np.power(1,4) # nano molar
 k_pi = np.power(800,4) # nano molar
 
-decay_inhibitor = 0.030
+decay_inhibitor = 0.06
 
 diffusion_inhibitor = 0.001
+
+inhibitor_m = 0.000005
+inhibitor_c = 1.5
 
 
 # initiate variables
@@ -110,7 +113,7 @@ for step in range(1,number_of_steps):
 
         #inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * np.power(inducer[step-delay_steps,cell],1)) / ( k_inducer + (a_vv * np.power(inducer[step-delay_steps,cell],1)) + (a_iv * np.power(inhibitor[step-delay_steps,cell],1)) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
 
-        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_ii*( np.power(inhibitor[step-1,cell],4)) ) / ( k_ii + (a_ii*np.power(inhibitor[step-1,cell],4)) )  + (saturation_pi*( np.power(propagator[step-1,cell],4)) ) / ( k_pi + (a_pi*np.power(propagator[step-1,cell],4)) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
+        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_ii*( np.power(inhibitor[step-1,cell],4)) ) / ( k_ii + (a_ii*np.power(inhibitor[step-1,cell],4)) )  + (saturation_pi*( np.power(propagator[step-1,cell],4)) ) / ( k_pi + (a_pi*np.power(propagator[step-1,cell],4)) ) ) * (-inhibitor_m*np.power(cell-(number_of_cells-1)/2,2) + inhibitor_c) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
 
         
         if propagator_rest[step-1,cell]:
