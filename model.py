@@ -28,26 +28,24 @@ calcium_decay_rate = 16 / steps_per_second # per step
 pulse = np.arange(0,number_of_steps/2,pulse_interval)
 
 # model parameters
-saturation_ii = 0.2 # micro meters per second
-saturation_pi = 0.2 # micro meters per second
 
-a_ii = 1 # no units
-a_pi = 1 # no units
+saturation_i = 0.3 # micro meters per second
 
-k_ii = np.power(1,4) # nano molar
-k_pi = np.power(800,4) # nano molar
+k_i = np.power(350,4) # nano molar
 
-decay_inhibitor = 0.06
+a_ii = 50 # no units
 
-diffusion_inhibitor = 0.001
+inhibitor_m = 0.000022
+inhibitor_c = 1
 
-inhibitor_m = 0.000005
-inhibitor_c = 1.5
+decay_inhibitor = 0.02
 
+diffusion_inhibitor = 0
 
 # initiate variables
 inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
 inhibitor = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+inhibitor_space = np.zeros( (number_of_cells), dtype=np.float64)
 propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_rest = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_time = np.zeros( (number_of_steps,number_of_cells), dtype=int)
@@ -77,6 +75,10 @@ for j in range(1):
         inhibitor[j,i] = (tmp_m1 * i) + tmp_c1
     for i in range(math.ceil(number_of_cells/2),number_of_cells):
         inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
+        
+# inhibitor_space calculation
+for cell in range(number_of_cells):
+    inhibitor_space[cell] =  inhibitor_c - inhibitor_m * np.power(cell-(number_of_cells-1)/2,2)
 
 # propagator initial conditions
 control_cells = np.union1d(np.arange(0,inducer_number_of_starting_cells), np.arange(number_of_cells - inducer_number_of_starting_cells ,number_of_cells))
@@ -112,8 +114,10 @@ for step in range(1,number_of_steps):
             cell_plus_one = cell+1
 
         #inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * np.power(inducer[step-delay_steps,cell],1)) / ( k_inducer + (a_vv * np.power(inducer[step-delay_steps,cell],1)) + (a_iv * np.power(inhibitor[step-delay_steps,cell],1)) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
+        
+        inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] - inhibitor_space[cell])
 
-        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_ii*( np.power(inhibitor[step-1,cell],4)) ) / ( k_ii + (a_ii*np.power(inhibitor[step-1,cell],4)) )  + (saturation_pi*( np.power(propagator[step-1,cell],4)) ) / ( k_pi + (a_pi*np.power(propagator[step-1,cell],4)) ) ) * (-inhibitor_m*np.power(cell-(number_of_cells-1)/2,2) + inhibitor_c) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
+        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_i*( np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) / ( k_i + np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
 
         
         if propagator_rest[step-1,cell]:
@@ -166,7 +170,7 @@ plt.xticks(np.linspace(0,number_of_cells,num=3), ['post.','ant.','post.'])
 ax2 = ax1.twinx()
 ax2.set_ylabel('Inhibitor conc. (nM)', color='red')
 ax2.tick_params('y', colors='red')
-ax2.set_ylim(0,10)
+ax2.set_ylim(0,15)
 ax2.grid('off')
 
 plt.tight_layout()

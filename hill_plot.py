@@ -12,17 +12,15 @@ ax = fig.gca(projection='3d')
 i = np.arange(0,10,0.01)
 p = np.arange(0,1000,1)
 
-alpha_ii = 0.1 # micrometers per second 
-k_ii = np.power(2,4) # nano Molar
-a_ii = 1 # no units
+alpha_i = 0.3 # micrometers per second
+k_i = np.power(350,4) # nano Molar
 
-alpha_pi = 0.3 # micrometers per second 
-k_pi = np.power(500,4) # nano Molar
-a_pi = 1 # no units
+a_ii = 50 # no units
+
 
 # plot i
 p,i = np.meshgrid(p,i)
-z = (alpha_pi * np.power(p,4)) / (k_pi + a_pi * np.power(p,4)) + (alpha_ii * np.power(i,4)) / (k_ii + a_ii * np.power(i,4))
+z = (alpha_i * (np.power(p,4) + np.power(a_ii*i,4))) / (k_i + np.power(p,4) + np.power(a_ii*i,4))
 
 # Plot the surface.
 surf = ax.plot_surface(p, i, z, cmap=cm.coolwarm,linewidth=0, antialiased=False)
