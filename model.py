@@ -29,21 +29,22 @@ pulse = np.arange(0,number_of_steps/2,pulse_interval)
 
 # model parameters
 
-saturation_i = 0.3 # micro meters per second
+saturation_i = 0.01 # micro meters per second
 
-k_i = np.power(350,4) # nano molar
+k_i = np.power(100,4) # nano molar
 
-a_ii = 50 # no units
+a_ii = 950 # no units
 
 inhibitor_m = 0.000022
 inhibitor_c = 1
 
-decay_inhibitor = 0.02
+decay_inhibitor = 0.002
 
 diffusion_inhibitor = 0
 
 # initiate variables
 inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+inhibitor_transform = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
 inhibitor = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
 inhibitor_space = np.zeros( (number_of_cells), dtype=np.float64)
 propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
