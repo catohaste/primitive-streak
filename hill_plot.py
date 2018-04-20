@@ -12,10 +12,10 @@ ax = fig.gca(projection='3d')
 i = np.arange(0,10,0.01)
 p = np.arange(0,1000,1)
 
-alpha_i = 0.3 # micrometers per second
-k_i = np.power(350,4) # nano Molar
+alpha_i = 0.005 # micrometers per second
+k_i = np.power(400,4) # nano Molar
 
-a_ii = 50 # no units
+a_ii = 40 # no units
 
 
 # plot i
@@ -28,7 +28,7 @@ surf = ax.plot_surface(p, i, z, cmap=cm.coolwarm,linewidth=0, antialiased=False)
 
 
 # Customize the z axis.
-ax.set_zlim(0.0, 0.5)
+ax.set_zlim(0.0, 0.005)
 ax.set_xlabel('Propagator conc.')
 ax.set_ylabel('Inhibitor conc.')
 ax.zaxis.set_major_locator(LinearLocator(10))

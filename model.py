@@ -29,16 +29,16 @@ pulse = np.arange(0,number_of_steps/2,pulse_interval)
 
 # model parameters
 
-saturation_i = 0.01 # micro meters per second
+saturation_i = 0.02 # micro meters per second
 
-k_i = np.power(100,4) # nano molar
+k_i = np.power(400,4) # nano molar
 
-a_ii = 950 # no units
+a_ii = 40 # no units
 
 inhibitor_m = 0.000022
 inhibitor_c = 1
 
-decay_inhibitor = 0.002
+decay_inhibitor = 0.001
 
 diffusion_inhibitor = 0
 
@@ -79,7 +79,7 @@ for j in range(1):
         
 # inhibitor_space calculation
 for cell in range(number_of_cells):
-    inhibitor_space[cell] =  inhibitor_c - inhibitor_m * np.power(cell-(number_of_cells-1)/2,2)
+    inhibitor_space[cell] =  inhibitor_c - (inhibitor_m * np.power(cell-((number_of_cells-1)/2),2))
 
 # propagator initial conditions
 control_cells = np.union1d(np.arange(0,inducer_number_of_starting_cells), np.arange(number_of_cells - inducer_number_of_starting_cells ,number_of_cells))
@@ -116,7 +116,7 @@ for step in range(1,number_of_steps):
 
         #inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * np.power(inducer[step-delay_steps,cell],1)) / ( k_inducer + (a_vv * np.power(inducer[step-delay_steps,cell],1)) + (a_iv * np.power(inhibitor[step-delay_steps,cell],1)) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
         
-        inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] - inhibitor_space[cell])
+        inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] + inhibitor_space[cell])
 
         inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_i*( np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) / ( k_i + np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
 
