@@ -28,34 +28,40 @@ calcium_decay_rate = 16 / steps_per_second # per step
 pulse = np.arange(0,number_of_steps/2,pulse_interval)
 
 # model parameters
-
-saturation_i = 0.02 # micro meters per second
-
-k_i = np.power(400,4) # nano molar
-
+# parameters govering dI
+inhibitor_saturation = 0.02 # micro meters per second
+inhibitor_k = np.power(400,4) # nano molar
 a_ii = 40 # no units
+inhibitor_decay = 0.001
+inhibitor_diffusion = 0
 
 inhibitor_m = 0.000022
 inhibitor_c = 1
 
-decay_inhibitor = 0.001
+# parameters govering dV
+inducer_saturation = 0.005
+inducer_k = np.power(0.75,4)
+a_iv = 2.5
+a_vv = 0.5
+inducer_decay = 0.001
+inducer_diffusion = 0
 
-diffusion_inhibitor = 0
 
 # initiate variables
 inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
-inhibitor_transform = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
 inhibitor = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
 inhibitor_space = np.zeros( (number_of_cells), dtype=np.float64)
+inhibitor_transform = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+propagator = np.zeros( (number_of_steps,number_of_cells), dtype=int)
 propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_rest = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_time = np.zeros( (number_of_steps,number_of_cells), dtype=int)
-propagator = np.zeros( (number_of_steps,number_of_cells), dtype=int)
+
 
 # inducer initial conditions
 inducer_number_of_starting_cells = 20
-inducer_high_conc = 200
-inducer_low_conc = -1
+inducer_high_conc = 8
+inducer_low_conc = 1.5
 
 start_steps = int(np.ceil(number_of_steps*0.5))
 
@@ -114,11 +120,11 @@ for step in range(1,number_of_steps):
             cell_minus_one = cell-1
             cell_plus_one = cell+1
 
-        #inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_source[cell] + ( (saturation_inducer * np.power(inducer[step-delay_steps,cell],1)) / ( k_inducer + (a_vv * np.power(inducer[step-delay_steps,cell],1)) + (a_iv * np.power(inhibitor[step-delay_steps,cell],1)) ) ) - (decay_inducer * inducer[step-1,cell]) + (diffusion_inducer * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
+        inducer[step,cell] = inducer[step-1,cell] + step_length * ( ( (inducer_saturation * np.power(inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * inducer[step-1,cell],1) +  np.power(a_iv * inhibitor[step-1,cell],1) ) ) - (inducer_decay * inducer[step-1,cell]) + (inducer_diffusion * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
         
         inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] + inhibitor_space[cell])
 
-        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (saturation_i*( np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) / ( k_i + np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) - (decay_inhibitor * inhibitor[step-1,cell]) + (diffusion_inhibitor * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
+        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (inhibitor_saturation*( np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) / ( inhibitor_k + np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) - (inhibitor_decay * inhibitor[step-1,cell]) + (inhibitor_diffusion * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
 
         
         if propagator_rest[step-1,cell]:
@@ -144,14 +150,15 @@ for step in range(1,number_of_steps):
             )
             
 
-        # if inducer[step,cell] < 0:
-        #     inducer[step,cell] = 0
+        if inducer[step,cell] < 0:
+            inducer[step,cell] = 0
         if inhibitor[step,cell] < 0:
             inhibitor[step,cell] = 0
         if propagator[step,cell] < 0:
             propagator[step,cell] = 0
             
 
+print("Inducer: ",inducer[3000,369])
 print("Inhibitor: ",inhibitor[3000,369])
 # print("Propagator: ",propagator[3000,369])
 
@@ -159,40 +166,41 @@ print("Inhibitor: ",inhibitor[3000,369])
 style.use('fivethirtyeight')
 fig = plt.figure()
 
-max_yval_ax1 = 5000
+max_yval_propagator = 5000
+max_yval_protein = 15
 
 # set up left axes
-ax1 = plt.axes(xlim=(-1, number_of_cells + 1),ylim=(0.0,max_yval_ax1),xlabel='Cell Location')
-ax1.set_ylabel('Propagator conc. (nM)', color='purple')
-ax1.tick_params('y', colors='purple')
-plt.xticks(np.linspace(0,number_of_cells,num=3), ['post.','ant.','post.'])
+ax_protein = plt.axes(xlim=(-1, number_of_cells + 1),ylim=(0.0,max_yval_protein),xlabel='Cell Location')
+ax_protein.set_ylabel('Protein conc. (nM)', color='black')
+ax_protein.tick_params('y', colors='black')
+plt.xticks(np.linspace(0,number_of_cells-1,num=3), ['post.','ant.','post.'])
 
 # set up right axes
-ax2 = ax1.twinx()
-ax2.set_ylabel('Inhibitor conc. (nM)', color='red')
-ax2.tick_params('y', colors='red')
-ax2.set_ylim(0,15)
-ax2.grid('off')
+ax_propagator = ax_protein.twinx()
+ax_propagator.set_ylabel('Propagator conc. (nM)', color='purple')
+ax_propagator.tick_params('y', colors='purple')
+ax_propagator.set_ylim(0,max_yval_propagator)
+ax_propagator.grid('off')
 
 plt.tight_layout()
 
 # draw inhibitor threshold line
-threshold = 2
+threshold = 1
 threshold_array = threshold * np.ones((number_of_cells+1,1),dtype=int)
-line_threshold, = ax2.plot(range(-1,number_of_cells), threshold_array,'k-',linewidth = 0.75,label='Inhibitor threshold')
-threshold_text = ax2.text(0.8*number_of_cells,threshold,'threshold',fontsize='small')
+line_threshold, = ax_protein.plot(range(-1,number_of_cells), threshold_array,'r--',linewidth = 0.75,label='Inhibitor threshold')
+threshold_text = ax_protein.text(0.8*number_of_cells,threshold,'approx. threshold',fontsize='tiny')
 
 # Initiate data to be animated
-line_propagator, = ax1.plot([], [],'-',color='purple',linewidth = 1.0,label='Propagator')
-line_inducer, = ax1.plot([], [],'go',markersize = 0.5,label='Inducer')
-line_inhibitor, = ax2.plot([], [],'ro',markersize = 0.5,label='Inhibitor')
-time_text = ax1.text(0.8*number_of_cells,max_yval_ax1*0.95,[],fontsize='small')
+line_propagator, = ax_propagator.plot([], [],'-',color='purple',linewidth = 1.0,label='Propagator')
+line_inducer, = ax_protein.plot([], [],'go',markersize = 0.5,label='Inducer')
+line_inhibitor, = ax_protein.plot([], [],'ro',markersize = 0.5,label='Inhibitor')
+time_text = ax_protein.text(0.8*number_of_cells,max_yval_propagator*0.95,[],fontsize='small')
 
 # Define dummy lines for legend
-legend_inhibitor = ax1.plot([],[],'ro',markersize = 0.5,label='Inhibitor')
+legend_propagator = ax_propagator.plot([],[],'-',color='purple',linewidth = 1.0,label='Propagator')
 
 # Add the legend
-legend = ax1.legend(loc='upper center',shadow=False,markerscale=3,numpoints=5)
+legend = ax_protein.legend(loc='upper center',shadow=False,markerscale=3,numpoints=5)
 for label in legend.get_texts():
     label.set_fontsize('small')
 
@@ -217,7 +225,7 @@ def animate(i):
     current_time = step_length*sample_rate*i
     time_string = 't = ' + str(current_time) + 's'
     time_text.set_text(time_string)
-    return time_text,line_propagator,line_inhibitor,line_inducer
+    return time_text,line_propagator,line_inhibitor,line_inducer,
     
 number_of_frames = int(np.ceil(number_of_steps / sample_rate))
 
