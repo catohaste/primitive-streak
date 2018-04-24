@@ -40,9 +40,9 @@ cax = fig.add_axes([0.83, 0.05 , 0.05, 0.3])
 
 
 
-reds = cm = plt.get_cmap('Reds')
+viridis = cm = plt.get_cmap('viridis')
 cNorm  = colors.Normalize(vmin=0, vmax=values[-1,-1])
-scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=reds)
+scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=viridis)
 #print(scalarMap.get_clim())
 
 redColorVal = np.zeros((time_points,number_of_cells,4),dtype=float)
