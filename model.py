@@ -71,7 +71,7 @@ inducer[:,:] = inducer_low_conc
 inducer[:start_steps,:inducer_number_of_starting_cells] = inducer_high_conc
 inducer[:start_steps,-inducer_number_of_starting_cells:] = inducer_high_conc
 
-# inhibitor initial conditions
+# inhibitor initial conditions and inhibitor space
 inhibitor_high_conc = 6
 inhibitor_low_conc = 3
 max_cell_id = number_of_cells - 1
@@ -82,12 +82,14 @@ tmp_c2 = (2 * inhibitor_high_conc) - inhibitor_low_conc
 for j in range(1):
     for i in range(math.ceil(number_of_cells/2)):
         inhibitor[j,i] = (tmp_m1 * i) + tmp_c1
+        inhibitor_space[i] = (tmp_m1 * i) + tmp_c1
     for i in range(math.ceil(number_of_cells/2),number_of_cells):
         inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
+        inhibitor_space[i] = (tmp_m2 * i) + tmp_c2
         
-# inhibitor_space calculation
-for cell in range(number_of_cells):
-    inhibitor_space[cell] =  inhibitor_c - (inhibitor_m * np.power(cell-((number_of_cells-1)/2),2))
+# # inhibitor_space calculation
+# for cell in range(number_of_cells):
+#     inhibitor_space[cell] =  inhibitor_c - (inhibitor_m * np.power(cell-((number_of_cells-1)/2),2))
 
 # propagator initial conditions
 control_cells = np.union1d(np.arange(0,inducer_number_of_starting_cells), np.arange(number_of_cells - inducer_number_of_starting_cells ,number_of_cells))
