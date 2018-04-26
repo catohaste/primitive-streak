@@ -9,7 +9,7 @@ number_of_cells = 1000
 time_points = 3000
 
 
-values = range(number_of_cells)
+# values = range(number_of_cells)
 
 # set up dummy data
 values = np.zeros( (time_points,number_of_cells) ,dtype=float)
@@ -43,7 +43,8 @@ cax = fig.add_axes([0.83, 0.05 , 0.05, 0.3])
 viridis = cm = plt.get_cmap('viridis')
 cNorm  = colors.Normalize(vmin=0, vmax=values[-1,-1])
 scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=viridis)
-#print(scalarMap.get_clim())
+print(scalarMap.get_clim())
+print(len(scalarMap()))
 
 redColorVal = np.zeros((time_points,number_of_cells,4),dtype=float)
 for cell in range(number_of_cells):
@@ -61,7 +62,7 @@ for t_point in range(1,time_points):
 plotted = ax.scatter(x2,y,s=100)
 plotted.set_color(redColorVal[0,:,:])
 
-im = dummy_ax.imshow(colorValues/8, cmap='Reds')
+im = dummy_ax.imshow(colorValues/8, cmap='viridis')
 fig.colorbar(im, cax=cax, orientation='vertical',label='units')
 
 ax.set_aspect('equal')
