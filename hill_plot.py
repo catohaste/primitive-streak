@@ -16,12 +16,12 @@ a_ii = 40 # no units
 
 # parameters for dV
 alpha_v = 0.005
-k_v = np.power(0.75,4)
-a_vv = 0.5
-a_iv = 2.5
+k_v = np.power(0.55,4)
+a_vv = 1
+a_iv = 1
 decay_v = 0.001
 
-c=0.001
+c=0.0008
 
 # # dI ######################################################
 #
@@ -50,7 +50,7 @@ c=0.001
 
 # calculate dV/dt
 v,i = np.meshgrid(v,i)
-dV = (alpha_v * np.power(a_vv*v + c,4)) / (k_v + np.power(a_iv*i,4) + np.power(a_vv*v + c,4))
+dV = c + ((alpha_v * (np.power(a_vv*v,4))) / (k_v + np.power(a_iv*i,4) + np.power(a_vv*v,4)))
  
 fig_dV = plt.figure()
 ax_dV = fig_dV.gca(projection='3d')

@@ -6,6 +6,7 @@ from matplotlib import animation
 from matplotlib import style
 import time
 import pickle
+from decimal import Decimal
 
 step_length = 0.5 # seconds
 steps_per_second = 2
@@ -40,11 +41,12 @@ inhibitor_c = 1
 
 # parameters govering dV
 inducer_saturation = 0.005
-inducer_k = np.power(0.75,4)
-a_iv = 2.5
-a_vv = 0.5
+inducer_k = np.power(0.55,4)
+a_iv = 1
+a_vv = 1
 inducer_decay = 0.001
 inducer_diffusion = 0
+inducer_basal = 0.0008
 
 
 # initiate variables
@@ -106,6 +108,12 @@ for step in range(1,number_of_steps):
             propagator_pulse[step-1,control_cell] = True
             propagator_time[step-1,control_cell] = pulse_time - 1
             propagator[step-1,control_cell] = pulse_value
+            
+    if step >= start_steps + 1:
+        inducer[step - 1,:inducer_number_of_starting_cells] = 0
+        inducer[step - 1,-inducer_number_of_starting_cells:] = 0
+        inhibitor[step - 1,:inducer_number_of_starting_cells] = 0
+        inhibitor[step - 1,-inducer_number_of_starting_cells:] = 0
         
     for cell in range(number_of_cells):
 
@@ -120,7 +128,7 @@ for step in range(1,number_of_steps):
             cell_minus_one = cell-1
             cell_plus_one = cell+1
 
-        inducer[step,cell] = inducer[step-1,cell] + step_length * ( ( (inducer_saturation * np.power(inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * inducer[step-1,cell],1) +  np.power(a_iv * inhibitor[step-1,cell],1) ) ) - (inducer_decay * inducer[step-1,cell]) + (inducer_diffusion * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
+        inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_basal + ( (inducer_saturation * np.power(inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * inducer[step-1,cell],1) +  np.power(a_iv * inhibitor[step-1,cell],1) ) ) - (inducer_decay * inducer[step-1,cell]) + (inducer_diffusion * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
         
         inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] + inhibitor_space[cell])
 
@@ -166,6 +174,11 @@ print("Inhibitor: ",inhibitor[3000,369])
 style.use('fivethirtyeight')
 fig = plt.figure()
 
+# define colours
+c_inhibitor = '#D50032'
+c_inducer = '#0097A9'
+c_propagator = '#4B384C'
+
 max_yval_propagator = 5000
 max_yval_protein = 15
 
@@ -177,30 +190,37 @@ plt.xticks(np.linspace(0,number_of_cells-1,num=3), ['post.','ant.','post.'])
 
 # set up right axes
 ax_propagator = ax_protein.twinx()
-ax_propagator.set_ylabel('Propagator conc. (nM)', color='purple')
-ax_propagator.tick_params('y', colors='purple')
+ax_propagator.set_ylabel('Calcium conc. (nM)', color=c_propagator)
+ax_propagator.tick_params('y', colors=c_propagator)
 ax_propagator.set_ylim(0,max_yval_propagator)
 ax_propagator.grid('off')
 
 plt.tight_layout()
 
-# draw inhibitor threshold line
-threshold = 1
-threshold_array = threshold * np.ones((number_of_cells+1,1),dtype=int)
-line_threshold, = ax_protein.plot(range(-1,number_of_cells), threshold_array,'r--',linewidth = 0.75,label='Inhibitor threshold')
-threshold_text = ax_protein.text(0.8*number_of_cells,threshold,'approx. threshold',fontsize='tiny')
+# Define dummy lines for legend
+legend_propagator = ax_protein.plot([],[],'-',color=c_propagator,linewidth = 1.0,label='Calcium')
 
 # Initiate data to be animated
-line_propagator, = ax_propagator.plot([], [],'-',color='purple',linewidth = 1.0,label='Propagator')
-line_inducer, = ax_protein.plot([], [],'go',markersize = 0.5,label='Inducer')
-line_inhibitor, = ax_protein.plot([], [],'ro',markersize = 0.5,label='Inhibitor')
-time_text = ax_protein.text(0.8*number_of_cells,max_yval_propagator*0.95,[],fontsize='small')
+line_propagator, = ax_propagator.plot([], [],'-',color=c_propagator,linewidth = 1.0,label='Calcium')
+line_inducer, = ax_protein.plot([], [],linewidth=0,marker='+',color=c_inducer,markersize = 2,label='cVg1')
+line_inhibitor, = ax_protein.plot([], [],linewidth=0,marker='x',color=c_inhibitor,markersize = 2,label='BMP')
+time_text = ax_protein.text(0.8*number_of_cells,max_yval_protein*0.95,[],fontsize='small')
 
-# Define dummy lines for legend
-legend_propagator = ax_propagator.plot([],[],'-',color='purple',linewidth = 1.0,label='Propagator')
+
+# draw inducer threshold line
+inducer_threshold = 2
+inducer_threshold_array = inducer_threshold * np.ones((number_of_cells+1,1),dtype=int)
+line_inducer_threshold, = ax_protein.plot(range(-1,number_of_cells), inducer_threshold_array,'--', color=c_inducer, linewidth = 1,label='cVg1 threshold')
+# threshold_text = ax_protein.text(0.65*number_of_cells,threshold,'approx. threshold',fontsize='x-small')
+
+# draw inhibitor threshold line
+inhibitor_threshold = 1
+inhibitor_threshold_array = inhibitor_threshold * np.ones((number_of_cells+1,1),dtype=int)
+line_inhibitor_threshold, = ax_protein.plot(range(-1,number_of_cells), inhibitor_threshold_array,':', color=c_inhibitor, linewidth = 1 ,label='BMP threshold')
+# threshold_text = ax_protein.text(0.65*number_of_cells,threshold,'approx. threshold',fontsize='x-small')
 
 # Add the legend
-legend = ax_protein.legend(loc='upper center',shadow=False,markerscale=3,numpoints=5)
+legend = ax_protein.legend(loc='upper left',shadow=False,markerscale=2,numpoints=5)
 for label in legend.get_texts():
     label.set_fontsize('small')
 
@@ -222,7 +242,7 @@ def animate(i):
     line_propagator.set_data(x, y_propagator)
     line_inducer.set_data(x, y_inducer)
     line_inhibitor.set_data(x, y_inhibitor)
-    current_time = step_length*sample_rate*i
+    current_time = Decimal(step_length*sample_rate*i)
     time_string = 't = ' + str(current_time) + 's'
     time_text.set_text(time_string)
     return time_text,line_propagator,line_inhibitor,line_inducer,
