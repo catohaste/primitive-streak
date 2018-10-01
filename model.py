@@ -13,7 +13,8 @@ step_length = 0.5 # seconds
 steps_per_second = 2
 
 number_of_cells = 751
-model_runtime = 2 * 60 * 60 # seconds
+# model_runtime = 2 * 60 * 60 # seconds
+model_runtime = 2 * 60 # seconds
 
 number_of_steps = int(model_runtime / step_length)
 
@@ -184,14 +185,14 @@ for step in range(1,number_of_steps):
             propagator[step,cell] = 0
             
 
-print("Inducer: ",inducer[3000,369])
-print("Inhibitor: ",inhibitor[3000,369])
+# print("Inducer: ",inducer[3000,369])
+# print("Inhibitor: ",inhibitor[3000,369])
 # print("Propagator: ",propagator[3000,369])
 
 # pickle data
-pickle.dump( inducer, open( "inducer.p", "wb" ) )
-pickle.dump( inhibitor, open( "inhibitor.p", "wb" ) )
-pickle.dump( propagator, open( "propagator.p", "wb" ) )
+pickle.dump( inducer, open( "output/pickles/inducer.p", "wb" ) )
+pickle.dump( inhibitor, open( "output/pickles/inhibitor.p", "wb" ) )
+pickle.dump( propagator, open( "output/pickles/propagator.p", "wb" ) )
 
 
 style.use('fivethirtyeight')
@@ -216,7 +217,7 @@ ax_propagator = ax_protein.twinx()
 ax_propagator.set_ylabel('Calcium conc. (nM)', color=c_propagator)
 ax_propagator.tick_params('y', colors=c_propagator)
 ax_propagator.set_ylim(0,max_yval_propagator)
-ax_propagator.grid('off')
+ax_propagator.grid(False)
 
 plt.tight_layout()
 
@@ -272,7 +273,7 @@ number_of_frames = int(np.ceil(number_of_steps / sample_rate))
 
 anim = animation.FuncAnimation(fig, animate, init_func=init, interval=42, frames=number_of_frames, blit=True)
 
-anim.save('model_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
+anim.save('output/videos/test_model_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
 
 plt.show()
 
