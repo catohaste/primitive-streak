@@ -17,6 +17,14 @@ for cell in range(number_of_cells):
     for t_point in range(time_points):
         values[t_point,cell] = (cell + t_point) % number_of_cells
 
+def rescale_values(values):
+    minimum = np.amin(values)
+    maximum = np.amax(values)
+    rescaled = (values - minimum) / (maximum - minimum)
+    return rescaled
+    
+rescaled = rescale_values(values)
+print('Done rescaling...')
 
 colorValues = np.arange(1024)
 colorValues = colorValues.reshape(32,32)
@@ -38,31 +46,33 @@ ax = fig.add_subplot(111)
 
 cax = fig.add_axes([0.83, 0.05 , 0.05, 0.3])
 
+# reds = cm = plt.get_cmap('Reds')
+cNorm  = colors.Normalize(vmin=np.amin(values), vmax=np.amax(values))
+scalarMap = cmx.ScalarMappable(norm=cNorm, cmap = 'Reds')
 
-
-viridis = cm = plt.get_cmap('viridis')
-cNorm  = colors.Normalize(vmin=0, vmax=values[-1,-1])
-scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=viridis)
-print(scalarMap.get_clim())
-print(len(scalarMap()))
 
 redColorVal = np.zeros((time_points,number_of_cells,4),dtype=float)
-for cell in range(number_of_cells):
-    redColorVal[0,cell,:] = scalarMap.to_rgba(values[0,cell])
-
-for t_point in range(1,time_points):
-    for cell in range(number_of_cells):
-        if cell == 0:
-            cell_minus_one = number_of_cells - 1
-        else:
-            cell_minus_one = cell - 1
+redColorVal = scalarMap.to_rgba(values)
+# for t_point in range(0,time_points):
+#     for cell in range(number_of_cells):
+#         redColorVal[t_point,cell,:] = scalarMap.to_rgb(values[t_point,cell])
         
-        redColorVal[t_point,cell,:] = redColorVal[t_point-1,cell_minus_one,:]
+# for cell in range(number_of_cells):
+#     redColorVal[0,cell,:] = scalarMap.to_rgb(values[0,cell])
+#
+# for t_point in range(1,time_points):
+#     for cell in range(number_of_cells):
+#         if cell == 0:
+#             cell_minus_one = number_of_cells - 1
+#         else:
+#             cell_minus_one = cell - 1
+#
+#         redColorVal[t_point,cell,:] = redColorVal[t_point-1,cell_minus_one,:]
         
 plotted = ax.scatter(x2,y,s=100)
 plotted.set_color(redColorVal[0,:,:])
 
-im = dummy_ax.imshow(colorValues/8, cmap='viridis')
+im = dummy_ax.imshow(colorValues/8, cmap='Reds')
 fig.colorbar(im, cax=cax, orientation='vertical',label='units')
 
 ax.set_aspect('equal')
