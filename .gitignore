@@ -1,6 +1,9 @@
 # Ignore all video plots
 *.mp4
 
+# Ignore pickles of parameter values
+*.p
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

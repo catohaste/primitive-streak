@@ -1,3 +1,4 @@
+
 from test_model import *
 import math
 import numpy as np
@@ -187,6 +188,11 @@ print("Inducer: ",inducer[3000,369])
 print("Inhibitor: ",inhibitor[3000,369])
 # print("Propagator: ",propagator[3000,369])
 
+# pickle data
+pickle.dump( inducer, open( "inducer.p", "wb" ) )
+pickle.dump( inhibitor, open( "inhibitor.p", "wb" ) )
+pickle.dump( propagator, open( "propagator.p", "wb" ) )
+
 
 style.use('fivethirtyeight')
 fig = plt.figure()
@@ -196,7 +202,7 @@ c_inhibitor = '#D50032'
 c_inducer = '#0097A9'
 c_propagator = '#4B384C'
 
-max_yval_propagator = 5000
+max_yval_propagator = 6000
 max_yval_protein = 15
 
 # set up left axes
@@ -221,7 +227,7 @@ legend_propagator = ax_protein.plot([],[],'-',color=c_propagator,linewidth = 1.0
 line_propagator, = ax_propagator.plot([], [],'-',color=c_propagator,linewidth = 1.0,label='Calcium')
 line_inhibitor, = ax_protein.plot([], [],linewidth=0,marker='.',color=c_inhibitor,markersize = 1,label='BMP')
 line_inducer, = ax_protein.plot([], [],linewidth=0,marker='.',color=c_inducer,markersize = 1,label='cVg1')
-time_text = ax_protein.text(0.8*number_of_cells,max_yval_protein*0.95,[],fontsize='small')
+time_text = ax_protein.text(0.75*number_of_cells,max_yval_protein*0.95,[],fontsize='medium')
 
 # draw inducer threshold line
 inducer_threshold_array = inducer_threshold * np.ones((number_of_cells+1,1),dtype=int)
