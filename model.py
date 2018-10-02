@@ -1,5 +1,7 @@
-
+# import tests
 from test_model import *
+
+# standard imports
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,41 +11,9 @@ import time
 import pickle
 from decimal import Decimal
 
-step_length = 0.5 # seconds
-steps_per_second = 2
 
-number_of_cells = 751
-# model_runtime = 2 * 60 * 60 # seconds
-model_runtime = 2 * 60 # seconds
-
-number_of_steps = int(model_runtime / step_length)
-
-pulse_value = 800 # nano molar
-pulse_time = 5 * steps_per_second # steps
-rest_time = 180 * steps_per_second # steps
-decay_time = 50 * steps_per_second # steps
-calcium_decay_rate = pulse_value / decay_time # per step
-
-# model parameters
-# parameters govering dI
-inhibitor_saturation = 0.011 # micro meters per second
-inhibitor_k = np.power(400,4) # nano molar
-a_ii = 40 # no units
-inhibitor_decay = 0.001
-inhibitor_diffusion = 0.0004
-
-inhibitor_m = 0.000022
-inhibitor_c = 1
-
-# parameters govering dV
-inducer_saturation = 0.005
-inducer_k = np.power(0.55,4)
-a_iv = 1
-a_vv = 1
-inducer_decay = 0.001
-inducer_diffusion = 0.0004
-inducer_basal = 0.0004
-
+# import parameters
+from params import *
 
 # initiate variables
 inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
@@ -55,24 +25,12 @@ propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_rest = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
 propagator_time = np.zeros( (number_of_steps,number_of_cells), dtype=int)
 
-
-# inducer initial conditions
-inducer_number_of_starting_cells = 30
-inducer_high_conc = 2.5
-inducer_low_conc = 1
-
-start_steps = int(np.ceil(number_of_steps*0.5))
-
+# initialize inducer
 inducer[:,:] = inducer_low_conc
-inducer[:start_steps,:inducer_number_of_starting_cells] = inducer_high_conc
-inducer[:start_steps,-inducer_number_of_starting_cells:] = inducer_high_conc
+inducer[:steps_before_remove_streak,:streak_number_of_cells] = inducer_high_conc
+inducer[:steps_before_remove_streak,-streak_number_of_cells:] = inducer_high_conc
 
-inducer_threshold = 2
-
-# inhibitor initial conditions and inhibitor space
-inhibitor_high_conc = 8
-inhibitor_low_conc = 3.5
-max_cell_id = number_of_cells - 1
+# initialize inhibitor
 tmp_m1 = (inhibitor_high_conc - inhibitor_low_conc) / (max_cell_id / 2 )
 tmp_c1 = inhibitor_low_conc
 tmp_m2 = (inhibitor_low_conc - inhibitor_high_conc) / (max_cell_id / 2 )
@@ -89,8 +47,8 @@ for j in range(1):
 # for cell in range(number_of_cells):
 #     inhibitor_space[cell] =  inhibitor_c - (inhibitor_m * np.power(cell-((number_of_cells-1)/2),2))
 
-# propagator initial conditions
-control_cells = np.union1d(np.arange(0,inducer_number_of_starting_cells), np.arange(number_of_cells - inducer_number_of_starting_cells ,number_of_cells))
+# initialize propagator
+control_cells = np.union1d(np.arange(0,streak_number_of_cells), np.arange(number_of_cells - streak_number_of_cells ,number_of_cells))
 propagator_pulse[0,control_cells] = True
 propagator_time[0,control_cells] = pulse_time - 1
 propagator[0,control_cells] = pulse_value
@@ -115,19 +73,19 @@ for step in range(1,number_of_steps):
     #         propagator_time[step-1,control_cell] = pulse_time - 1
     #         propagator[step-1,control_cell] = pulse_value
             
-    if step >= start_steps + 1:
-        inducer[step - 1,:inducer_number_of_starting_cells] = 0
-        inducer[step - 1,-inducer_number_of_starting_cells:] = 0
-        inhibitor[step - 1,:inducer_number_of_starting_cells] = 0
-        inhibitor[step - 1,-inducer_number_of_starting_cells:] = 0
-        propagator[step - 1,:inducer_number_of_starting_cells] = 0
-        propagator[step - 1,-inducer_number_of_starting_cells:] = 0
-        propagator_pulse[step - 1,:inducer_number_of_starting_cells] = False
-        propagator_pulse[step - 1,-inducer_number_of_starting_cells:] = False
-        propagator_rest[step - 1,:inducer_number_of_starting_cells] = False
-        propagator_rest[step - 1,-inducer_number_of_starting_cells:] = False
-        propagator_time[step - 1,:inducer_number_of_starting_cells] = 0
-        propagator_time[step - 1,-inducer_number_of_starting_cells:] = 0
+    if step >= steps_before_remove_streak + 1:
+        inducer[step - 1,:streak_number_of_cells] = 0
+        inducer[step - 1,-streak_number_of_cells:] = 0
+        inhibitor[step - 1,:streak_number_of_cells] = 0
+        inhibitor[step - 1,-streak_number_of_cells:] = 0
+        propagator[step - 1,:streak_number_of_cells] = 0
+        propagator[step - 1,-streak_number_of_cells:] = 0
+        propagator_pulse[step - 1,:streak_number_of_cells] = False
+        propagator_pulse[step - 1,-streak_number_of_cells:] = False
+        propagator_rest[step - 1,:streak_number_of_cells] = False
+        propagator_rest[step - 1,-streak_number_of_cells:] = False
+        propagator_time[step - 1,:streak_number_of_cells] = 0
+        propagator_time[step - 1,-streak_number_of_cells:] = 0
         
     for cell in range(number_of_cells):
 
@@ -173,7 +131,7 @@ for step in range(1,number_of_steps):
             ) + (
                 propagator_rest[step,cell] * (
                     decay_time - (rest_time - propagator_time[step,cell])
-                ) * calcium_decay_rate
+                ) * propagator_decay_rate
             )
             
 
@@ -199,9 +157,9 @@ style.use('fivethirtyeight')
 fig = plt.figure()
 
 # define colours
-c_inhibitor = '#D50032'
-c_inducer = '#0097A9'
-c_propagator = '#4B384C'
+color_inhibitor = '#D50032'
+color_inducer = '#0097A9'
+color_propagator = '#4B384C'
 
 max_yval_propagator = 6000
 max_yval_protein = 15
@@ -214,31 +172,31 @@ plt.xticks(np.linspace(0,number_of_cells-1,num=3), ['post.','ant.','post.'])
 
 # set up right axes
 ax_propagator = ax_protein.twinx()
-ax_propagator.set_ylabel('Calcium conc. (nM)', color=c_propagator)
-ax_propagator.tick_params('y', colors=c_propagator)
+ax_propagator.set_ylabel('Calcium conc. (nM)', color=color_propagator)
+ax_propagator.tick_params('y', colors=color_propagator)
 ax_propagator.set_ylim(0,max_yval_propagator)
 ax_propagator.grid(False)
 
 plt.tight_layout()
 
 # Define dummy lines for legend
-legend_propagator = ax_protein.plot([],[],'-',color=c_propagator,linewidth = 1.0,label='Calcium')
+legend_propagator = ax_protein.plot([],[],'-',color=color_propagator,linewidth = 1.0,label='Calcium')
 
 # Initiate data to be animated
-line_propagator, = ax_propagator.plot([], [],'-',color=c_propagator,linewidth = 1.0,label='Calcium')
-line_inhibitor, = ax_protein.plot([], [],linewidth=0,marker='.',color=c_inhibitor,markersize = 1,label='BMP')
-line_inducer, = ax_protein.plot([], [],linewidth=0,marker='.',color=c_inducer,markersize = 1,label='cVg1')
+line_propagator, = ax_propagator.plot([], [],'-',color=color_propagator,linewidth = 1.0,label='Calcium')
+line_inhibitor, = ax_protein.plot([], [],linewidth=0,marker='.',color=color_inhibitor,markersize = 1,label='BMP')
+line_inducer, = ax_protein.plot([], [],linewidth=0,marker='.',color=color_inducer,markersize = 1,label='cVg1')
 time_text = ax_protein.text(0.75*number_of_cells,max_yval_protein*0.95,[],fontsize='medium')
 
 # draw inducer threshold line
 inducer_threshold_array = inducer_threshold * np.ones((number_of_cells+1,1),dtype=int)
-line_inducer_threshold, = ax_protein.plot(range(0,number_of_cells+1), inducer_threshold_array,'--', color=c_inducer, linewidth = 1,label='cVg1 threshold')
+line_inducer_threshold, = ax_protein.plot(range(0,number_of_cells+1), inducer_threshold_array,'--', color=color_inducer, linewidth = 1,label='cVg1 threshold')
 # threshold_text = ax_protein.text(0.65*number_of_cells,threshold,'approx. threshold',fontsize='x-small')
 
 # # draw inhibitor threshold line
 # inhibitor_threshold = 1
 # inhibitor_threshold_array = inhibitor_threshold * np.ones((number_of_cells+1,1),dtype=int)
-# line_inhibitor_threshold, = ax_protein.plot(range(0,number_of_cells+1), inhibitor_threshold_array,':', color=c_inhibitor, linewidth = 1 ,label='BMP threshold')
+# line_inhibitor_threshold, = ax_protein.plot(range(0,number_of_cells+1), inhibitor_threshold_array,':', color=color_inhibitor, linewidth = 1 ,label='BMP threshold')
 # # threshold_text = ax_protein.text(0.65*number_of_cells,threshold,'approx. threshold',fontsize='x-small')
 
 # Add the legend
