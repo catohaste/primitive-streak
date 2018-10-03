@@ -4,8 +4,7 @@ import numpy as np
 """ time parameters """
 step_length = 0.5 # seconds
 steps_per_second = 2
-# model_runtime = 2 * 60 * 60 # seconds
-model_runtime = 2 * 60 # seconds
+model_runtime = 2 * 60 * 60 # seconds
 
 number_of_steps = int(model_runtime / step_length)
 
