@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 from matplotlib import style
 import time
+import datetime
+import os
 import pickle
+from shutil import copyfile
 from decimal import Decimal
 
 
@@ -42,10 +45,6 @@ for j in range(1):
     for i in range(math.ceil(number_of_cells/2),number_of_cells):
         inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
         inhibitor_space[i] = (tmp_m2 * i) + tmp_c2
-        
-# # inhibitor_space calculation
-# for cell in range(number_of_cells):
-#     inhibitor_space[cell] =  inhibitor_c - (inhibitor_m * np.power(cell-((number_of_cells-1)/2),2))
 
 # initialize propagator
 control_cells = np.union1d(np.arange(0,streak_number_of_cells), np.arange(number_of_cells - streak_number_of_cells ,number_of_cells))
@@ -60,18 +59,6 @@ for step in range(1,number_of_steps):
     
     propagator_rest[step,:] = propagator_rest[step-1,:]
     propagator_pulse[step,:] = propagator_pulse[step-1,:]
-    
-    # for cell in range(number_of_cells):
-#         if (inducer[step-1,cell] > inducer_threshold) and (propagator_rest[step-1,cell]==False) and (propagator_pulse[step-1,cell]==False):
-#             propagator_pulse[step-1,cell] = True
-#             propagator_time[step-1,cell] = pulse_time - 1
-#             propagator[step-1,cell] = pulse_value
-    
-    # if step in pulse:
-    #     for control_cell in control_cells:
-    #         propagator_pulse[step-1,control_cell] = True
-    #         propagator_time[step-1,control_cell] = pulse_time - 1
-    #         propagator[step-1,control_cell] = pulse_value
             
     if step >= steps_before_remove_streak + 1:
         inducer[step - 1,:streak_number_of_cells] = 0
@@ -147,10 +134,20 @@ for step in range(1,number_of_steps):
 # print("Inhibitor: ",inhibitor[3000,369])
 # print("Propagator: ",propagator[3000,369])
 
+now = datetime.datetime.now()
+date_string = now.strftime("%Y-%m-%d_%H")+now.strftime("%M")
+file_prefix = 'test' # date_string
+
 # pickle data
-pickle.dump( inducer, open( "output/pickles/inducer.p", "wb" ) )
-pickle.dump( inhibitor, open( "output/pickles/inhibitor.p", "wb" ) )
-pickle.dump( propagator, open( "output/pickles/propagator.p", "wb" ) )
+pickle_dir = "output/pickles/"+file_prefix
+if not os.path.exists(pickle_dir):
+    os.makedirs(pickle_dir)
+pickle.dump( inducer, open( pickle_dir+"/"+file_prefix+"_inducer.p", "wb" ) )
+pickle.dump( inhibitor, open( pickle_dir+"/"+file_prefix+"_inhibitor.p", "wb" ) )
+pickle.dump( propagator, open( pickle_dir+"/"+file_prefix+"_propagator.p", "wb" ) )
+
+# # save parameter values
+copyfile("params.py", "output/params/"+file_prefix+"_params.py")
 
 
 style.use('fivethirtyeight')
@@ -231,7 +228,7 @@ number_of_frames = int(np.ceil(number_of_steps / sample_rate))
 
 anim = animation.FuncAnimation(fig, animate, init_func=init, interval=42, frames=number_of_frames, blit=True)
 
-anim.save('output/videos/test_model_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
+anim.save('output/videos/'+file_prefix+'_model_animation.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
 
 plt.show()
 

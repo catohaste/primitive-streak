@@ -4,6 +4,9 @@
 # Ignore pickles of parameter values
 *.p
 
+#Ignore all output
+output/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
