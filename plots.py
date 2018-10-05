@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
+import matplotlib.colors as mcolors
 import matplotlib.cm as cmx
 from matplotlib import animation
 
@@ -17,8 +17,46 @@ propagator = pickle.load( open( pickle_dir+"/"+file_prefix+"_propagator.p", "rb"
 inducer = pickle.load( open( pickle_dir+"/"+file_prefix+"_inducer.p", "rb" ) )
 inhibitor = pickle.load( open( pickle_dir+"/"+file_prefix+"_inhibitor.p", "rb" ) )
 
+inducer_min=np.amin(inducer)
+inducer_max=np.amax(inducer)
+inducer_threshold = 2
+colors1_proportion = (inducer_threshold - inducer_min) / (inducer_max - inducer_min)
 
-def create_circle_animation(var, cmap_string, label_string, file_prefix):
+def create_colormap_2colors(proportion_colors1):
+    
+    number_colors1 = math.floor(proportion_colors1 * 256)
+    number_colors2 = 256 - number_colors1
+    
+    # sample the colormaps that you want to use. Use 128 from each so we get 256
+    # colors in total
+    colors1 = cmx.Greens(np.linspace(0, 1, number_colors1))
+    oranges = cmx.Oranges(np.linspace(0, 1, number_colors2))
+    orange = oranges[math.ceil(number_colors2*0.65),:]
+    colors2 = np.zeros( (number_colors2,4), dtype=np.float64)
+    colors2[:number_colors2] = orange
+    
+    # combine them and build a new colormap
+    colors = np.vstack((colors1, colors2))
+    
+    mymap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+    
+    return mymap
+    
+def plot_color_gradients(cmap):
+    
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    ax.imshow(gradient, aspect='auto', cmap=cmap)
+    ax.set_axis_off()
+
+    plt.show()
+    
+
+def create_circle_animation(var, colormap, label_string, file_prefix):
     
     number_of_steps = var.shape[0]
     number_of_cells = var.shape[1]
@@ -38,8 +76,8 @@ def create_circle_animation(var, cmap_string, label_string, file_prefix):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
-    cNorm  = colors.Normalize(vmin=np.amin(var), vmax=np.amax(var))
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap =cmap_string)
+    cNorm  = mcolors.Normalize(vmin=np.amin(var), vmax=np.amax(var))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap =colormap)
     
     # var_colors = np.zeros((time_points,number_of_cells,4),dtype=float) OLD
     var_colors = scalarMap.to_rgba(var)
@@ -48,7 +86,7 @@ def create_circle_animation(var, cmap_string, label_string, file_prefix):
     plotted.set_color(var_colors[0,:,:])
     
     colormap_ax = fig.add_axes([0.83, 0.05 , 0.05, 0.3])
-    im = dummy_ax.imshow(var_dummy/8, cmap=cmap_string)
+    im = dummy_ax.imshow(var_dummy/8, cmap=colormap)
     fig.colorbar(im, cax=colormap_ax, orientation='vertical',label='units')
     
     ax.set_aspect('equal')
@@ -74,7 +112,7 @@ def create_circle_animation(var, cmap_string, label_string, file_prefix):
     def animate(i):
         sample_rate = 20
         plotted.set_color(var_colors[i*sample_rate,:,:])
-        current_time = i*sample_rate
+        current_time = int((i*sample_rate) / 2)
         time_string = 't = ' + str(current_time) + 's'
         time_text.set_text(time_string)
         return plotted, time_text
@@ -88,7 +126,11 @@ def create_circle_animation(var, cmap_string, label_string, file_prefix):
     #plt.show()
 
 
-create_circle_animation(propagator,'Purples','Calcium',file_prefix)
-create_circle_animation(inhibitor,'Reds','BMP4',file_prefix)
-create_circle_animation(inducer,'Greens','Vg1',file_prefix)
+inducer_colormap = create_colormap_2colors(colors1_proportion)
+
+# plot_color_gradients(inducer_colormap)
+
+create_circle_animation(propagator,plt.get_cmap('Oranges'),'Calcium',file_prefix)
+create_circle_animation(inhibitor,plt.get_cmap('Reds'),'BMP4',file_prefix)
+create_circle_animation(inducer,inducer_colormap,'Vg1',file_prefix)
 
