@@ -29,7 +29,7 @@ def create_colormap_2colors(proportion_colors1):
     
     # sample the colormaps that you want to use. Use 128 from each so we get 256
     # colors in total
-    colors1 = cmx.Greens(np.linspace(0, 1, number_colors1))
+    colors1 = cmx.Blues(np.linspace(0, 1, number_colors1))
     oranges = cmx.Oranges(np.linspace(0, 1, number_colors2))
     orange = oranges[math.ceil(number_colors2*0.65),:]
     colors2 = np.zeros( (number_colors2,4), dtype=np.float64)
@@ -85,9 +85,12 @@ def create_circle_animation(var, colormap, label_string, file_prefix):
     plotted = ax.scatter(x,y,s=50)
     plotted.set_color(var_colors[0,:,:])
     
+    print(var.max())
+    colorbar_max = var.max()
+    
     colormap_ax = fig.add_axes([0.83, 0.05 , 0.05, 0.3])
-    im = dummy_ax.imshow(var_dummy/8, cmap=colormap)
-    fig.colorbar(im, cax=colormap_ax, orientation='vertical',label='units')
+    im = dummy_ax.imshow((var_dummy/256)*colorbar_max, cmap=colormap)
+    fig.colorbar(im, cax=colormap_ax, orientation='vertical',label='nM')
     
     ax.set_aspect('equal')
     ax.axis('off')
@@ -131,6 +134,6 @@ inducer_colormap = create_colormap_2colors(colors1_proportion)
 # plot_color_gradients(inducer_colormap)
 
 create_circle_animation(propagator,plt.get_cmap('Oranges'),'Calcium',file_prefix)
-create_circle_animation(inhibitor,plt.get_cmap('Reds'),'BMP4',file_prefix)
-create_circle_animation(inducer,inducer_colormap,'Vg1',file_prefix)
+create_circle_animation(inhibitor,plt.get_cmap('Reds'),'BMP',file_prefix)
+create_circle_animation(inducer,inducer_colormap,'cVg1',file_prefix)
 
