@@ -8,12 +8,14 @@ model_runtime = 2 * 60 * 60 # seconds
 
 number_of_steps = int(model_runtime / step_length)
 
-steps_before_remove_streak = int(np.ceil(number_of_steps*0.5))
-
 """ space parameters """
 number_of_cells = 751
-streak_number_of_cells = int(60 / 2)
 max_cell_id = number_of_cells - 1
+streak_cells = np.union1d(np.arange(0,30), np.arange(number_of_cells - 30 ,number_of_cells))
+
+""" experiment parameters """
+steps_before_cut = int(np.ceil(number_of_steps*0.5))
+cells_to_remove = streak_cells
 
 """ propagator pulse parameters """
 pulse_value = 800 # nano molar

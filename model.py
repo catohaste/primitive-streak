@@ -14,41 +14,57 @@ import pickle
 from shutil import copyfile
 from decimal import Decimal
 
-def remove_portion_of_embryo(current_step,step_to_remove_from,portion_to_remove,inducer,inhibitor,propagator,propagator_pulse,propagator_rest,propagator_time):
-    # check step_to_remove_from is not larger than total number of steps
-    
-    # check that portion_to_remove is a list
-    
-    # check that no element of portion_to_remove is larger than the total number of cells
-    
-    if current_step > step_to_remove_from:
+class Variables:
+    def __init__(self, number_of_steps, number_of_cells):
+        self.inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+        self.inhibitor = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+        self.propagator = np.zeros( (number_of_steps,number_of_cells), dtype=int)
+        self.propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
+        self.propagator_rest = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
+        self.propagator_time = np.zeros( (number_of_steps,number_of_cells), dtype=int)
+        
+    def initialize_inducer(self,inducer_low_conc,inducer_high_conc,high_conc_cells):
+        self.inducer[:,:] = inducer_low_conc
+        for cell in high_conc_cells:  
+            self.inducer[:,cell] = inducer_high_conc
+            self.inducer[:,cell] = inducer_high_conc
+        
+    def remove_portion_of_embryo(self, current_step, portion_to_remove):
+        # check current_step is not larger than total number of steps
+        
+        # check portion_to_remove is a list
+        
+        # check portion_to_remove is entirely within defined embryo
+        
         for cell_to_remove in portion_to_remove:
-            inducer[current_step - 1,cell_to_remove] = 0
-            inhibitor[current_step - 1,cell_to_remove] = 0
-            propagator[current_step - 1,cell_to_remove] = 0
-            propagator_pulse[current_step - 1,cell_to_remove] = False
-            propagator_rest[current_step - 1,cell_to_remove] = False
-            propagator_time[current_step - 1,cell_to_remove] = 0
+            self.inducer[current_step - 1,cell_to_remove] = 0
+            self.inhibitor[current_step - 1,cell_to_remove] = 0
+            self.propagator[current_step - 1,cell_to_remove] = 0
+            self.propagator_pulse[current_step - 1,cell_to_remove] = False
+            self.propagator_rest[current_step - 1,cell_to_remove] = False
+            self.propagator_time[current_step - 1,cell_to_remove] = 0
+            
+    def pickle_variables(self, pickle_directory, file_prefix):
+        # check 'os' has been imported
+        
+        if not os.path.exists(pickle_directory):
+            os.makedirs(pickle_directory)
+        pickle.dump( self.inducer, open( pickle_directory+"/"+file_prefix+"_inducer.p", "wb" ) )
+        pickle.dump( self.inhibitor, open( pickle_directory+"/"+file_prefix+"_inhibitor.p", "wb" ) )
+        pickle.dump( self.propagator, open( pickle_directory+"/"+file_prefix+"_propagator.p", "wb" ) )
 
-    return inducer,inhibitor,propagator,propagator_pulse,propagator_rest,propagator_time
 
 # import parameters
 from params import *
 
 # initiate variables
-inducer = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
-inhibitor = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
+var = Variables(number_of_steps,number_of_cells)
+
 inhibitor_space = np.zeros( (number_of_cells), dtype=np.float64)
 inhibitor_transform = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
-propagator = np.zeros( (number_of_steps,number_of_cells), dtype=int)
-propagator_pulse = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
-propagator_rest = np.zeros( (number_of_steps,number_of_cells), dtype=bool)
-propagator_time = np.zeros( (number_of_steps,number_of_cells), dtype=int)
 
 # initialize inducer
-inducer[:,:] = inducer_low_conc
-inducer[:steps_before_remove_streak,:streak_number_of_cells] = inducer_high_conc
-inducer[:steps_before_remove_streak,-streak_number_of_cells:] = inducer_high_conc
+var.initialize_inducer(inducer_low_conc, inducer_high_conc, streak_cells)
 
 # initialize inhibitor
 tmp_m1 = (inhibitor_high_conc - inhibitor_low_conc) / (max_cell_id / 2 )
@@ -57,39 +73,28 @@ tmp_m2 = (inhibitor_low_conc - inhibitor_high_conc) / (max_cell_id / 2 )
 tmp_c2 = (2 * inhibitor_high_conc) - inhibitor_low_conc
 for j in range(1):
     for i in range(math.ceil(number_of_cells/2)):
-        inhibitor[j,i] = (tmp_m1 * i) + tmp_c1
+        var.inhibitor[j,i] = (tmp_m1 * i) + tmp_c1
         inhibitor_space[i] = (tmp_m1 * i) + tmp_c1
     for i in range(math.ceil(number_of_cells/2),number_of_cells):
-        inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
+        var.inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
         inhibitor_space[i] = (tmp_m2 * i) + tmp_c2
 
 # initialize propagator
-control_cells = np.union1d(np.arange(0,streak_number_of_cells), np.arange(number_of_cells - streak_number_of_cells ,number_of_cells))
-propagator_pulse[0,control_cells] = True
-propagator_time[0,control_cells] = pulse_time - 1
-propagator[0,control_cells] = pulse_value
+control_cells = streak_cells
+var.propagator_pulse[0,control_cells] = True
+var.propagator_time[0,control_cells] = pulse_time - 1
+var.propagator[0,control_cells] = pulse_value
 
 print("Number of steps: ",number_of_steps)
 #print("Delay steps: ",delay_steps,"\n")
 
 for step in range(1,number_of_steps):
     
-    propagator_rest[step,:] = propagator_rest[step-1,:]
-    propagator_pulse[step,:] = propagator_pulse[step-1,:]
+    var.propagator_rest[step,:] = var.propagator_rest[step-1,:]
+    var.propagator_pulse[step,:] = var.propagator_pulse[step-1,:]
     
-    if step >= steps_before_remove_streak + 1:
-        inducer[step - 1,:streak_number_of_cells] = 0
-        inducer[step - 1,-streak_number_of_cells:] = 0
-        inhibitor[step - 1,:streak_number_of_cells] = 0
-        inhibitor[step - 1,-streak_number_of_cells:] = 0
-        propagator[step - 1,:streak_number_of_cells] = 0
-        propagator[step - 1,-streak_number_of_cells:] = 0
-        propagator_pulse[step - 1,:streak_number_of_cells] = False
-        propagator_pulse[step - 1,-streak_number_of_cells:] = False
-        propagator_rest[step - 1,:streak_number_of_cells] = False
-        propagator_rest[step - 1,-streak_number_of_cells:] = False
-        propagator_time[step - 1,:streak_number_of_cells] = 0
-        propagator_time[step - 1,-streak_number_of_cells:] = 0
+    if step > steps_before_cut:
+        var.remove_portion_of_embryo(step,cells_to_remove)
         
     for cell in range(number_of_cells):
 
@@ -104,64 +109,59 @@ for step in range(1,number_of_steps):
             cell_minus_one = cell-1
             cell_plus_one = cell+1
 
-        inducer[step,cell] = inducer[step-1,cell] + step_length * ( inducer_basal + ( (inducer_saturation * np.power(inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * inducer[step-1,cell],1) +  np.power(a_iv * inhibitor[step-1,cell],1) ) ) - (inducer_decay * inducer[step-1,cell]) + (inducer_diffusion * ( inducer[step-1,cell_minus_one] - 2 * inducer[step-1,cell] + inducer[step-1,cell_plus_one] ) ) )
+        var.inducer[step,cell] = var.inducer[step-1,cell] + step_length * ( inducer_basal + ( (inducer_saturation * np.power(var.inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * var.inducer[step-1,cell],1) +  np.power(a_iv * var.inhibitor[step-1,cell],1) ) ) - (inducer_decay * var.inducer[step-1,cell]) + (inducer_diffusion * ( var.inducer[step-1,cell_minus_one] - 2 * var.inducer[step-1,cell] + var.inducer[step-1,cell_plus_one] ) ) )
         
-        inhibitor_transform[step-1,cell] = a_ii * (inhibitor[step-1,cell] + inhibitor_space[cell])
+        inhibitor_transform[step-1,cell] = a_ii * (var.inhibitor[step-1,cell] + inhibitor_space[cell])
 
-        inhibitor[step,cell] = inhibitor[step-1,cell] + step_length * ( ( (inhibitor_saturation*( np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) / ( inhibitor_k + np.power(inhibitor_transform[step-1,cell],4) + np.power(propagator[step-1,cell],4) ) ) - (inhibitor_decay * inhibitor[step-1,cell]) + (inhibitor_diffusion * ( inhibitor[step-1,cell_minus_one] - 2 * inhibitor[step-1,cell] + inhibitor[step-1,cell_plus_one] ) ) )
+        var.inhibitor[step,cell] = var.inhibitor[step-1,cell] + step_length * ( ( (inhibitor_saturation*( np.power(inhibitor_transform[step-1,cell],4) + np.power(var.propagator[step-1,cell],4) ) ) / ( inhibitor_k + np.power(inhibitor_transform[step-1,cell],4) + np.power(var.propagator[step-1,cell],4) ) ) - (inhibitor_decay * var.inhibitor[step-1,cell]) + (inhibitor_diffusion * ( var.inhibitor[step-1,cell_minus_one] - 2 * var.inhibitor[step-1,cell] + var.inhibitor[step-1,cell_plus_one] ) ) )
 
         
-        if propagator_rest[step-1,cell]:
-            if propagator_time[step-1,cell] > 0:
-                propagator_time[step,cell] = propagator_time[step-1,cell] - 1
+        if var.propagator_rest[step-1,cell]:
+            if var.propagator_time[step-1,cell] > 0:
+                var.propagator_time[step,cell] = var.propagator_time[step-1,cell] - 1
             else:
-                propagator_rest[step,cell] = False
-        elif propagator_pulse[step-1,cell]:
-            if propagator_time[step-1,cell] > 0:
-                propagator_time[step,cell] = propagator_time[step-1,cell] - 1
+                var.propagator_rest[step,cell] = False
+        elif var.propagator_pulse[step-1,cell]:
+            if var.propagator_time[step-1,cell] > 0:
+                var.propagator_time[step,cell] = var.propagator_time[step-1,cell] - 1
             else:
-                propagator_pulse[step,cell] = False
-                propagator_rest[step,cell] = True
-                propagator_time[step,cell] = rest_time - 1
-        elif propagator_pulse[step-1,cell_minus_one] or propagator_pulse[step-1,cell_plus_one]:
-            propagator_pulse[step,cell] = True
-            propagator_time[step,cell] = pulse_time - 1
-        elif inducer[step-1,cell] > inducer_threshold:
-            propagator_pulse[step,cell] = True
-            propagator_time[step,cell] = pulse_time - 1
+                var.propagator_pulse[step,cell] = False
+                var.propagator_rest[step,cell] = True
+                var.propagator_time[step,cell] = rest_time - 1
+        elif var.propagator_pulse[step-1,cell_minus_one] or var.propagator_pulse[step-1,cell_plus_one]:
+            var.propagator_pulse[step,cell] = True
+            var.propagator_time[step,cell] = pulse_time - 1
+        elif var.inducer[step-1,cell] > inducer_threshold:
+            var.propagator_pulse[step,cell] = True
+            var.propagator_time[step,cell] = pulse_time - 1
             
-        propagator[step,cell] = (
-                propagator_pulse[step,cell] * pulse_value
+        var.propagator[step,cell] = (
+                var.propagator_pulse[step,cell] * pulse_value
             ) + (
-                propagator_rest[step,cell] * (
-                    decay_time - (rest_time - propagator_time[step,cell])
+                var.propagator_rest[step,cell] * (
+                    decay_time - (rest_time - var.propagator_time[step,cell])
                 ) * propagator_decay_rate
             )
             
 
-        if inducer[step,cell] < 0:
-            inducer[step,cell] = 0
-        if inhibitor[step,cell] < 0:
-            inhibitor[step,cell] = 0
-        if propagator[step,cell] < 0:
-            propagator[step,cell] = 0
+        if var.inducer[step,cell] < 0:
+            var.inducer[step,cell] = 0
+        if var.inhibitor[step,cell] < 0:
+            var.inhibitor[step,cell] = 0
+        if var.propagator[step,cell] < 0:
+            var.propagator[step,cell] = 0
             
 
-# print("Inducer: ",inducer[3000,369])
-# print("Inhibitor: ",inhibitor[3000,369])
-# print("Propagator: ",propagator[3000,369])
-
-now = datetime.datetime.now()
-date_string = now.strftime("%Y-%m-%d_%H")+now.strftime("%M")
-file_prefix = 'test' # date_string
+# print("Inducer: ",var.inducer[3000,369])
+# print("Inhibitor: ",var.inhibitor[3000,369])
+# print("Propagator: ",var.propagator[3000,369])
 
 # pickle data
+now = datetime.datetime.now()
+date_string = now.strftime("%Y-%m-%d_%H")+now.strftime("%M")
+file_prefix = 'changes' # date_string
 pickle_dir = "output/pickles/"+file_prefix
-if not os.path.exists(pickle_dir):
-    os.makedirs(pickle_dir)
-pickle.dump( inducer, open( pickle_dir+"/"+file_prefix+"_inducer.p", "wb" ) )
-pickle.dump( inhibitor, open( pickle_dir+"/"+file_prefix+"_inhibitor.p", "wb" ) )
-pickle.dump( propagator, open( pickle_dir+"/"+file_prefix+"_propagator.p", "wb" ) )
+var.pickle_variables(pickle_dir, file_prefix)
 
 # # save parameter values
 copyfile("params.py", "output/params/"+file_prefix+"_params.py")
@@ -230,9 +230,9 @@ sample_rate = 20
 def animate(i):
     sample_rate = 20
     x = list(range(number_of_cells))
-    y_propagator = propagator[sample_rate*i,:]
-    y_inducer = inducer[sample_rate*i,:]
-    y_inhibitor = inhibitor[sample_rate*i,:]
+    y_propagator = var.propagator[sample_rate*i,:]
+    y_inducer = var.inducer[sample_rate*i,:]
+    y_inhibitor = var.inhibitor[sample_rate*i,:]
     line_propagator.set_data(x, y_propagator)
     line_inducer.set_data(x, y_inducer)
     line_inhibitor.set_data(x, y_inhibitor)
