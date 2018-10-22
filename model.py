@@ -14,6 +14,23 @@ import pickle
 from shutil import copyfile
 from decimal import Decimal
 
+def remove_portion_of_embryo(current_step,step_to_remove_from,portion_to_remove,inducer,inhibitor,propagator,propagator_pulse,propagator_rest,propagator_time):
+    # check step_to_remove_from is not larger than total number of steps
+    
+    # check that portion_to_remove is a list
+    
+    # check that no element of portion_to_remove is larger than the total number of cells
+    
+    if current_step > step_to_remove_from:
+        for cell_to_remove in portion_to_remove:
+            inducer[current_step - 1,cell_to_remove] = 0
+            inhibitor[current_step - 1,cell_to_remove] = 0
+            propagator[current_step - 1,cell_to_remove] = 0
+            propagator_pulse[current_step - 1,cell_to_remove] = False
+            propagator_rest[current_step - 1,cell_to_remove] = False
+            propagator_time[current_step - 1,cell_to_remove] = 0
+
+    return inducer,inhibitor,propagator,propagator_pulse,propagator_rest,propagator_time
 
 # import parameters
 from params import *
@@ -59,7 +76,7 @@ for step in range(1,number_of_steps):
     
     propagator_rest[step,:] = propagator_rest[step-1,:]
     propagator_pulse[step,:] = propagator_pulse[step-1,:]
-            
+    
     if step >= steps_before_remove_streak + 1:
         inducer[step - 1,:streak_number_of_cells] = 0
         inducer[step - 1,-streak_number_of_cells:] = 0
