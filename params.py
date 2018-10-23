@@ -1,5 +1,12 @@
 
 import numpy as np
+import datetime
+
+""" file parameters """
+now = datetime.datetime.now()
+date_string = now.strftime("%Y-%m-%d_%H")+now.strftime("%M")
+file_prefix = 'half_cut' # date_string
+pickle_dir = "output/pickles/"+file_prefix
 
 """ time parameters """
 step_length = 0.5 # seconds
@@ -15,7 +22,8 @@ streak_cells = np.union1d(np.arange(0,30), np.arange(number_of_cells - 30 ,numbe
 
 """ experiment parameters """
 steps_before_cut = int(np.ceil(number_of_steps*0.5))
-cells_to_remove = streak_cells
+half_no_of_cells_to_remove = int(np.floor(number_of_cells*0.25))
+cells_to_remove = np.union1d(np.arange(0,half_no_of_cells_to_remove), np.arange(number_of_cells - half_no_of_cells_to_remove ,number_of_cells))
 
 """ propagator pulse parameters """
 pulse_value = 800 # nano molar
@@ -35,19 +43,27 @@ inhibitor_c = 1
 
 """ equation parameters : inducer """
 inducer_saturation = 0.005
-inducer_k = np.power(0.55,4)
-a_iv = 1
-a_vv = 1
+inducer_k = np.power(10,4)
+a_iv = 6
+a_vv = 2
 inducer_decay = 0.001
 inducer_diffusion = 0.0004
-inducer_basal = 0.0004
+inducer_basal = 0.0008
 
 """ initial conditions : inducer """
-inducer_high_conc = 2.5
-inducer_low_conc = 1
-inducer_threshold = 2
+inducer_high_conc = 10
+inducer_low_conc = 3
+inducer_threshold = 8
 
 """ initial conditions : inhibitor """
 inhibitor_high_conc = 8
-inhibitor_low_conc = 3.5
+inhibitor_low_conc = 5
+
+plot_params = {
+    'number_of_steps': number_of_steps,
+    'number_of_cells': number_of_cells,
+    'step_length': step_length,
+    'inducer_threshold': inducer_threshold,
+    'file_prefix': file_prefix
+}
 
