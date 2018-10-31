@@ -11,7 +11,7 @@ pickle_dir = "output/pickles/"+file_prefix
 """ time parameters """
 step_length = 0.5 # seconds
 steps_per_second = 2
-model_runtime = 2 * 60 * 60 # seconds
+model_runtime = 2 * 60 *10 # seconds
 
 number_of_steps = int(model_runtime / step_length)
 
@@ -32,23 +32,32 @@ rest_time = 180 * steps_per_second # steps
 decay_time = 50 * steps_per_second # steps
 propagator_decay_rate = pulse_value / decay_time # per step
 
+""" equation parameters : protein """
+protein_basal = 0
+protein_saturation = 0.0005
+protein_decay = 0.00002
+protein_diffusion = 0.002
+
 """ equation parameters : inhibitor """
-inhibitor_saturation = 0.011 # micro meters per second
-inhibitor_k = np.power(400,4) # nano molar
-a_ii = 40 # no units
-inhibitor_decay = 0.001
-inhibitor_diffusion = 0.0004
-inhibitor_m = 0.000022
-inhibitor_c = 1
+inhibitor_basal = protein_basal
+inhibitor_saturation = protein_saturation # micro meters per second
+inhibitor_k = np.power(10,4) # nano molar
+a_bb = 1 # no units
+a_cb = 1
+inhibitor_decay = inhibitor_saturation / 5
+inhibitor_diffusion = inhibitor_saturation / (2 * 0.008)
+
+# inhibitor_m = 0.000022
+# inhibitor_c = 1
 
 """ equation parameters : inducer """
-inducer_saturation = 0.005
+inducer_basal = protein_basal
+inducer_saturation = protein_saturation
 inducer_k = np.power(10,4)
-a_iv = 6
-a_vv = 2
-inducer_decay = 0.001
-inducer_diffusion = 0.0004
-inducer_basal = 0.0008
+a_bv = 1
+a_vv = 1
+inducer_decay = inducer_saturation / 10
+inducer_diffusion = inducer_saturation / (2 * 0.06)
 
 """ initial conditions : inducer """
 inducer_high_conc = 10
@@ -58,6 +67,24 @@ inducer_threshold = 8
 """ initial conditions : inhibitor """
 inhibitor_high_conc = 8
 inhibitor_low_conc = 5
+
+model_params = {
+    'inhibitor_basal': inhibitor_basal,
+    'inhibitor_saturation': inhibitor_saturation,
+    'inhibitor_k': inhibitor_k,
+    'a_bb': a_bb,
+    'a_cb': a_cb,
+    'inhibitor_decay': inhibitor_decay,
+    'inhibitor_diffusion': inhibitor_diffusion,
+
+    'inducer_basal': inducer_basal,
+    'inducer_saturation': inducer_saturation,
+    'inducer_k': inducer_k,
+    'a_bv': a_bv,
+    'a_vv': a_vv,
+    'inducer_decay': inducer_decay,
+    'inducer_diffusion': inducer_diffusion
+}
 
 plot_params = {
     'number_of_steps': number_of_steps,

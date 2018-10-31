@@ -15,24 +15,11 @@ from plots import *
 # initiate variables
 var = Variables(number_of_steps,number_of_cells)
 
-inhibitor_space = np.zeros( (number_of_cells), dtype=np.float64)
-inhibitor_transform = np.zeros( (number_of_steps,number_of_cells), dtype=np.float64)
-
 # initialize inducer
 var.initialize_inducer_stageXII(inducer_low_conc, inducer_high_conc)
 
 # initialize inhibitor
-tmp_m1 = (inhibitor_high_conc - inhibitor_low_conc) / (max_cell_id / 2 )
-tmp_c1 = inhibitor_low_conc
-tmp_m2 = (inhibitor_low_conc - inhibitor_high_conc) / (max_cell_id / 2 )
-tmp_c2 = (2 * inhibitor_high_conc) - inhibitor_low_conc
-for j in range(1):
-    for i in range(math.ceil(number_of_cells/2)):
-        var.inhibitor[j,i] = (tmp_m1 * i) + tmp_c1
-        inhibitor_space[i] = (tmp_m1 * i) + tmp_c1
-    for i in range(math.ceil(number_of_cells/2),number_of_cells):
-        var.inhibitor[j,i] = (tmp_m2 * i) + tmp_c2
-        inhibitor_space[i] = (tmp_m2 * i) + tmp_c2
+var.initialize_inhibitor(inhibitor_low_conc, inhibitor_high_conc)
 
 # initialize propagator
 control_cells = np.zeros( (number_of_cells), dtype=bool)
@@ -43,38 +30,51 @@ var.propagator_pulse[0,control_cells] = True
 var.propagator_time[0,control_cells] = pulse_time - 1
 var.propagator[0,control_cells] = pulse_value
 
+# print(var.inducer[0,75] - var.inducer[0,76])
+# print(var.inhibitor[0,1] - var.inhibitor[0,0])
+
 # plot_initial_conditions(var,plot_params)
 
 print("Number of steps: ",number_of_steps)
+
+cell_dict = {
+    'cell':0,
+    'cell_minus_one':0,
+    'cell_plus_one':0
+}
 
 for step in range(1,number_of_steps):
 
     var.propagator_rest[step,:] = var.propagator_rest[step-1,:]
     var.propagator_pulse[step,:] = var.propagator_pulse[step-1,:]
 
-    if step > steps_before_cut:
-        var.remove_portion_of_embryo(step,cells_to_remove)
+    # if step > steps_before_cut:
+    #     var.remove_portion_of_embryo(step,cells_to_remove)
 
     for cell in range(number_of_cells):
+
+        cell_dict['cell'] = cell
 
         # set periodic boundary conditions for strip
         if cell == 0 :
             cell_minus_one = number_of_cells-1
             cell_plus_one = cell+1
+            cell_dict['cell_minus_one'] = number_of_cells-1
+            cell_dict['cell_plus_one'] = cell+1
         elif cell == number_of_cells-1:
+            cell_dict['cell_minus_one'] = cell-1
+            cell_dict['cell_plus_one'] = 0
             cell_minus_one = cell-1
             cell_plus_one = 0
         else:
+            cell_dict['cell_minus_one'] = cell-1
+            cell_dict['cell_plus_one'] = cell+1
             cell_minus_one = cell-1
             cell_plus_one = cell+1
 
-        var.inducer[step,cell] = var.inducer[step-1,cell] + step_length * ( inducer_basal + ( (inducer_saturation * np.power(var.inducer[step-1,cell],1)) / ( inducer_k + np.power(a_vv * var.inducer[step-1,cell],1) +  np.power(a_iv * var.inhibitor[step-1,cell],1) ) ) - (inducer_decay * var.inducer[step-1,cell]) + (inducer_diffusion * ( var.inducer[step-1,cell_minus_one] - 2 * var.inducer[step-1,cell] + var.inducer[step-1,cell_plus_one] ) ) )
+        var.inducer[step,cell] = var.inducer[step-1,cell] + step_length * inducerODE(step-1,cell_dict,var,model_params)
 
-        # inhibitor_transform[step-1,cell] = a_ii * (var.inhibitor[step-1,cell] + inhibitor_space[cell])
-        inhibitor_transform[step-1,cell] = a_ii * var.inhibitor[step-1,cell]
-
-        var.inhibitor[step,cell] = var.inhibitor[step-1,cell] + step_length * ( ( (inhibitor_saturation*( np.power(inhibitor_transform[step-1,cell],4) + np.power(var.propagator[step-1,cell],4) ) ) / ( inhibitor_k + np.power(inhibitor_transform[step-1,cell],4) + np.power(var.propagator[step-1,cell],4) ) ) - (inhibitor_decay * var.inhibitor[step-1,cell]) + (inhibitor_diffusion * ( var.inhibitor[step-1,cell_minus_one] - 2 * var.inhibitor[step-1,cell] + var.inhibitor[step-1,cell_plus_one] ) ) )
-
+        var.inhibitor[step,cell] = var.inhibitor[step-1,cell] + inhibitorODE(step-1,cell_dict,var,model_params)
 
         if var.propagator_rest[step-1,cell]:
             if var.propagator_time[step-1,cell] > 0:
