@@ -48,8 +48,8 @@ for step in range(1,number_of_steps):
     var.propagator_rest[step,:] = var.propagator_rest[step-1,:]
     var.propagator_pulse[step,:] = var.propagator_pulse[step-1,:]
 
-    # if step > steps_before_cut:
-    #     var.remove_portion_of_embryo(step,cells_to_remove)
+    if step > steps_before_cut:
+        var.remove_portion_of_embryo(step,cells_to_remove)
 
     for cell in range(number_of_cells):
 

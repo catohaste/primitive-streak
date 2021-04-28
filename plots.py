@@ -162,10 +162,12 @@ def create_circle_animation(var, colormap, label_string, file_prefix):
         return plotted, time_text
 
     number_of_frames = int(np.ceil(number_of_steps / sample_rate))
+    frames_per_second = 24
+    interval = np.ceil(1000/frames_per_second)
 
-    anim = animation.FuncAnimation(fig, animate, init_func=init, interval=42, frames=number_of_frames, blit=True)
+    anim = animation.FuncAnimation(fig, animate, init_func=init, interval=interval, frames=number_of_frames, blit=True)
 
-    anim.save("output/videos/"+file_prefix+'_'+label_string+'.mp4', fps=24, extra_args=['-vcodec', 'libx264'])
+    anim.save("output/videos/"+file_prefix+'_'+label_string+'.mp4', fps=frames_per_second, extra_args=['-vcodec', 'libx264'])
 
     #plt.show()
     
